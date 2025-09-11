@@ -1,0 +1,358 @@
+// SCSS Variables for better maintainability
+$primary-color: #292a36;
+$secondary-color: #4a5568;
+$accent-color: #68d391;
+$danger-color: #f56565;
+$text-color: #ffffff;
+$shadow-color: rgba(0, 0, 0, 0.8);
+$pipe-gradient-start: #2d3748;
+$pipe-gradient-end: #1a202c;
+
+// Mixins
+@mixin text-shadow($color: $shadow-color) {
+    text-shadow: 2px 2px 4px $color, 0 0 10px rgba(0, 0, 0, 0.5);
+}
+
+@mixin pipe-gradient {
+    background: linear-gradient(90deg, $pipe-gradient-start 0%, $pipe-gradient-end 50%, $pipe-gradient-start 100%);
+    box-shadow: 
+        inset 0 0 20px rgba(255, 255, 255, 0.1),
+        0 4px 8px rgba(0, 0, 0, 0.3),
+        0 0 0 2px #000000;
+}
+
+@mixin smooth-transition($property: all, $duration: 0.3s) {
+    transition: $property $duration ease-in-out;
+}
+
+// Reset and base styles
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html, body {
+    overflow: hidden;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+body {
+    // Background with parallax effect
+    .bg {
+        height: 100vh;
+        width: 100vw;
+        background: url('../assets/bgimg.jpg') no-repeat center center fixed;
+        background-size: cover;
+        -moz-background-size: cover;
+        -webkit-background-size: cover;
+        -o-background-size: cover;
+        position: relative;
+        
+        // Add animated clouds or particles overlay
+        &::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(180deg, 
+                rgba(135, 206, 235, 0.1) 0%, 
+                rgba(135, 206, 235, 0.05) 50%, 
+                rgba(255, 255, 255, 0.1) 100%);
+            pointer-events: none;
+            z-index: 1;
+        }
+    }
+
+    // Enhanced character styling
+    .char {
+        position: absolute;
+        height: 150px;
+        width: 150px;
+        transform: translate(-50%, -50%);
+        z-index: 100;
+        @include smooth-transition(transform, 0.1s);
+        
+        // Add subtle glow effect
+        filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.3));
+        
+        // Hover effect for better interactivity
+        &:hover {
+            filter: drop-shadow(0 0 15px rgba(255, 255, 255, 0.5));
+        }
+    }
+
+    // NPC character styling
+    .npc-character {
+        position: fixed;
+        z-index: 75;
+        @include smooth-transition(all, 0.1s);
+        
+        // Add red glow effect to distinguish from player
+        filter: drop-shadow(0 0 15px rgba(255, 0, 0, 0.5));
+        
+        // Subtle animation
+        animation: npcFloat 2s ease-in-out infinite alternate;
+        
+        // Hover effect
+        &:hover {
+            filter: drop-shadow(0 0 20px rgba(255, 0, 0, 0.8));
+        }
+    }
+
+    // Enhanced pipe styling with gradients and better visuals
+    .pipe_sprite {
+        position: fixed;
+        @include pipe-gradient;
+        z-index: 50;
+        @include smooth-transition(transform, 0.1s);
+        
+        // Add pipe cap styling
+        &::before {
+            content: '';
+            position: absolute;
+            width: calc(100% + 8px);
+            height: 30px;
+            left: -4px;
+            background: linear-gradient(90deg, $pipe-gradient-end 0%, $pipe-gradient-start 50%, $pipe-gradient-end 100%);
+            border: 2px solid #000000;
+            border-radius: 4px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+        
+        // Top pipe cap
+        &.pipe_top::before {
+            bottom: -15px;
+        }
+        
+        // Bottom pipe cap
+        &.pipe_bottom::before {
+            top: -15px;
+        }
+        
+        // Add subtle animation on hover
+        &:hover {
+            transform: scaleX(1.02);
+        }
+    }
+
+    // Enhanced message styling
+    .msg {
+        position: absolute;
+        top: 20vh;
+        left: 50vw;
+        transform: translate(-50%, -50%);
+        font-size: 2rem;
+        color: $text-color;
+        @include text-shadow;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        z-index: 200;
+        text-align: center;
+        line-height: 1.4;
+        @include smooth-transition;
+        
+        // Animated text for better UX
+        small {
+            font-size: 1.2rem;
+            opacity: 0.8;
+            display: block;
+            margin-top: 10px;
+        }
+    }
+
+    // Enhanced message box styling
+    .messageStyle {
+        background: linear-gradient(135deg, 
+            rgba(0, 0, 0, 0.9) 0%, 
+            rgba(45, 55, 72, 0.9) 100%);
+        padding: 25px 30px;
+        border-radius: 15px;
+        border: 3px solid rgba(255, 255, 255, 0.3);
+        backdrop-filter: blur(10px);
+        box-shadow: 
+            0 8px 32px rgba(0, 0, 0, 0.3),
+            inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        
+        // Subtle animation
+        animation: messageGlow 2s ease-in-out infinite alternate;
+    }
+
+    // Enhanced score display
+    .score {
+        position: absolute;
+        top: 5vh;
+        left: 50vw;
+        transform: translate(-50%, -50%);
+        font-size: 1.8rem;
+        color: $text-color;
+        @include text-shadow;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        z-index: 200;
+        display: flex;
+        flex-direction: row;
+        gap: 1rem;
+        align-items: center;
+        
+        .score-title {   
+            font-weight: bold;
+            color: $accent-color;
+        }
+        
+        .score-val {
+            font-weight: normal;
+            font-size: 2rem;
+            color: #ffd700;
+            text-shadow: 2px 2px 4px $shadow-color, 0 0 10px rgba(255, 215, 0, 0.5);
+        }
+    }
+
+    // Add pause indicator
+    .pause-indicator {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        font-size: 4rem;
+        color: rgba(255, 255, 255, 0.8);
+        z-index: 150;
+        animation: pulse 1s ease-in-out infinite;
+    }
+}
+
+// Animations
+@keyframes messageGlow {
+    0% {
+        box-shadow: 
+            0 8px 32px rgba(0, 0, 0, 0.3),
+            inset 0 1px 0 rgba(255, 255, 255, 0.1),
+            0 0 20px rgba(104, 211, 145, 0.3);
+    }
+    100% {
+        box-shadow: 
+            0 8px 32px rgba(0, 0, 0, 0.3),
+            inset 0 1px 0 rgba(255, 255, 255, 0.1),
+            0 0 30px rgba(104, 211, 145, 0.5);
+    }
+}
+
+@keyframes pulse {
+    0%, 100% {
+        opacity: 0.6;
+        transform: translate(-50%, -50%) scale(1);
+    }
+    50% {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1.1);
+    }
+}
+
+@keyframes scoreIncrease {
+    0% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.2);
+        color: #ffd700;
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+
+@keyframes npcFloat {
+    0% {
+        transform: translateY(0px);
+        filter: drop-shadow(0 0 15px rgba(255, 0, 0, 0.5));
+    }
+    100% {
+        transform: translateY(-10px);
+        filter: drop-shadow(0 0 20px rgba(255, 0, 0, 0.7));
+    }
+}
+
+// Responsive design
+@media (max-width: 768px) {
+    body {
+        .char {
+            height: 120px;
+            width: 120px;
+        }
+        
+        .npc-character {
+            height: 100px !important;
+            width: 100px !important;
+        }
+        
+        .msg {
+            font-size: 1.5rem;
+            padding: 0 20px;
+            
+            small {
+                font-size: 1rem;
+            }
+        }
+        
+        .messageStyle {
+            padding: 20px;
+            border-radius: 10px;
+        }
+        
+        .score {
+            font-size: 1.4rem;
+            
+            .score-val {
+                font-size: 1.6rem;
+            }
+        }
+        
+        .pipe_sprite {
+            &::before {
+                height: 20px;
+            }
+            
+            &.pipe_top::before {
+                bottom: -10px;
+            }
+            
+            &.pipe_bottom::before {
+                top: -10px;
+            }
+        }
+    }
+}
+
+@media (max-width: 480px) {
+    body {
+        .char {
+            height: 100px;
+            width: 100px;
+        }
+        
+        .npc-character {
+            height: 80px !important;
+            width: 80px !important;
+        }
+        
+        .msg {
+            font-size: 1.2rem;
+            top: 25vh;
+        }
+        
+        .score {
+            font-size: 1.2rem;
+            top: 3vh;
+            
+            .score-val {
+                font-size: 1.4rem;
+            }
+        }
+    }
+}
+
+// High score celebration effect
+.new-high-score {
+    animation: scoreIncrease 0.5s ease-in-out;
+    color: #ffd700 !important;
+}
