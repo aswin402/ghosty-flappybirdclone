@@ -1,15 +1,26 @@
+// Mobile detection utility
+const isMobile = () => {
+    return window.innerWidth <= 768 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+};
+
 // Game configuration
 export const GAME_CONFIG = {
     PIPE_SPEED: 3,
     GRAVITY: 0.5,
     JUMP_FORCE: -7.6,
-    PIPE_GAP: 380, // Increased from 180 for more vertical space
+    PIPE_GAP: 380, // Desktop gap - Increased from 180 for more vertical space
+    PIPE_GAP_MOBILE: 240, // Mobile gap - Smaller for mobile devices
     PIPE_WIDTH: 80,
     PIPE_SPAWN_DISTANCE: 350, // Increased from 200 for more horizontal space
     MIN_PIPE_HEIGHT: 100,
     MAX_PIPE_HEIGHT: window.innerHeight - 300,
     DIFFICULTY_INCREASE_INTERVAL: 5, // Every 5 points
     MAX_DIFFICULTY: 2.5,
+    
+    // Dynamic pipe gap based on device
+    get CURRENT_PIPE_GAP() {
+        return isMobile() ? this.PIPE_GAP_MOBILE : this.PIPE_GAP;
+    },
     
     // New features configuration
     PIPE_WIDTH_INCREASE_SCORE: 50, // Score threshold for pipe width increase
@@ -19,6 +30,13 @@ export const GAME_CONFIG = {
     NPC_SPAWN_SCORES: [10, 50], // Scores at which NPCs start spawning (max NPCs at score 50)
     NPC_SPEED: 4, // Base NPC movement speed
     NPC_SPAWN_INTERVAL: 180, // Frames between NPC spawns (reduced for more frequent spawning)
+    NPC_COLLISION_PADDING: 25, // Padding to make NPC collision detection more precise
+    NPC_COLLISION_PADDING_MOBILE: 20, // Smaller padding for mobile devices
+    
+    // Dynamic collision padding based on device
+    get CURRENT_NPC_COLLISION_PADDING() {
+        return isMobile() ? this.NPC_COLLISION_PADDING_MOBILE : this.NPC_COLLISION_PADDING;
+    },
     
     // Music configuration
     MUSIC_CHANGE_SCORES: [200, 500, 1000], // Scores at which music changes

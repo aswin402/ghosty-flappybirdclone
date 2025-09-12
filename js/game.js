@@ -9,7 +9,9 @@ import {
     startBackgroundMusic, 
     updateBackgroundMusic, 
     playGameOverMusic,
-    stopBackgroundMusic 
+    stopBackgroundMusic,
+    pauseBackgroundMusic,
+    resumeBackgroundMusic 
 } from './audio.js';
 import { 
     createScoreParticles, 
@@ -119,7 +121,7 @@ export class Game {
         if (this.gameState === GAME_STATES.PLAYING) {
             this.gameState = GAME_STATES.PAUSED;
             showPauseMessage(this.msg);
-            stopBackgroundMusic();
+            pauseBackgroundMusic();
             
             if (this.animationId) {
                 cancelAnimationFrame(this.animationId);
@@ -131,7 +133,7 @@ export class Game {
         if (this.gameState === GAME_STATES.PAUSED) {
             this.gameState = GAME_STATES.PLAYING;
             hidePauseMessage(this.msg);
-            updateBackgroundMusic(this.score);
+            resumeBackgroundMusic();
             this.startGameLoop();
         }
     }
@@ -220,13 +222,14 @@ export class Game {
         if (this.pipeSpawnTimer >= GAME_CONFIG.PIPE_SPAWN_DISTANCE / this.moveSpeed) {
             this.pipeSpawnTimer = 0;
             
-            // Calculate random gap position
+            // Calculate random gap position using dynamic pipe gap
+            const currentPipeGap = GAME_CONFIG.CURRENT_PIPE_GAP;
             const minGapY = GAME_CONFIG.MIN_PIPE_HEIGHT;
-            const maxGapY = window.innerHeight - GAME_CONFIG.PIPE_GAP - GAME_CONFIG.MIN_PIPE_HEIGHT;
+            const maxGapY = window.innerHeight - currentPipeGap - GAME_CONFIG.MIN_PIPE_HEIGHT;
             const gapY = Math.random() * (maxGapY - minGapY) + minGapY;
             
             // Create new pipe with current score for width calculation
-            const newPipe = new Pipe(window.innerWidth, gapY, GAME_CONFIG.PIPE_GAP, this.score);
+            const newPipe = new Pipe(window.innerWidth, gapY, currentPipeGap, this.score);
             this.pipes.push(newPipe);
         }
     }

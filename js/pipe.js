@@ -2,7 +2,7 @@ import { GAME_CONFIG } from './config.js';
 
 // Pipe class for better management
 export class Pipe {
-    constructor(x, gapY, gapSize = GAME_CONFIG.PIPE_GAP, score = 0) {
+    constructor(x, gapY, gapSize = GAME_CONFIG.CURRENT_PIPE_GAP, score = 0) {
         this.x = x;
         this.gapY = gapY;
         this.gapSize = gapSize;

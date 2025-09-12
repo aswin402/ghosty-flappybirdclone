@@ -132,6 +132,27 @@ export function stopBackgroundMusic() {
     }
 }
 
+export function pauseBackgroundMusic() {
+    if (currentBackgroundMusic) {
+        currentBackgroundMusic.pause();
+    }
+}
+
+export function resumeBackgroundMusic() {
+    if (currentBackgroundMusic) {
+        if (currentBackgroundMusic.paused) {
+            currentBackgroundMusic.play().catch(() => {
+                console.log('Could not resume background music');
+            });
+        } else if (currentBackgroundMusic.currentTime === 0) {
+            // If music was stopped (currentTime is 0), restart it
+            currentBackgroundMusic.play().catch(() => {
+                console.log('Could not start background music');
+            });
+        }
+    }
+}
+
 export function updateBackgroundMusic(score) {
     let newTrack = 'start';
     

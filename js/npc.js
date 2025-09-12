@@ -77,17 +77,28 @@ export class NPC {
     }
 
     checkCollision(charRect) {
+        // Add collision padding to make collision detection more precise
+        // This reduces the collision area to the actual visible parts of the characters
+        const collisionPadding = GAME_CONFIG.CURRENT_NPC_COLLISION_PADDING;
+        
         const npcRect = {
-            left: this.x,
-            right: this.x + this.width,
-            top: this.y,
-            bottom: this.y + this.height
+            left: this.x + collisionPadding,
+            right: this.x + this.width - collisionPadding,
+            top: this.y + collisionPadding,
+            bottom: this.y + this.height - collisionPadding
         };
         
-        return (charRect.right > npcRect.left && 
-                charRect.left < npcRect.right && 
-                charRect.bottom > npcRect.top && 
-                charRect.top < npcRect.bottom);
+        const charCollisionRect = {
+            left: charRect.left + collisionPadding,
+            right: charRect.right - collisionPadding,
+            top: charRect.top + collisionPadding,
+            bottom: charRect.bottom - collisionPadding
+        };
+        
+        return (charCollisionRect.right > npcRect.left && 
+                charCollisionRect.left < npcRect.right && 
+                charCollisionRect.bottom > npcRect.top && 
+                charCollisionRect.top < npcRect.bottom);
     }
 
     remove() {
