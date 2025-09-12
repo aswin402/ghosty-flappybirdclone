@@ -196,6 +196,7 @@ export class Game {
         // Check screen boundaries
         const charProps = this.char.getBoundingClientRect();
         if (charProps.top <= 0 || charProps.bottom >= window.innerHeight) {
+            this.charImg.src = "assets/kout.png";
             this.gameOver();
             return;
         }

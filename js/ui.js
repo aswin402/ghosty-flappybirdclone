@@ -67,8 +67,7 @@ export function showGameOverMessage(score, highScore, msg, scoreTitle, charImg) 
     msg.style.left = '50vw';
     msg.classList.add('messageStyle');
     
-    // Hide character
-    charImg.style.display = 'none';
+    // Character is already hidden by collision detection with a brief delay to show kout.png
     
     // Update score display
     scoreTitle.innerHTML = `Final Score: ${score} | High: ${highScore}`;
