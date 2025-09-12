@@ -169,7 +169,8 @@ export const GAME_CONFIG = {
     GRAVITY: 0.5,                     // Gravity strength
     JUMP_FORCE: -7.6,                 // Jump velocity
     PIPE_GAP: 380,                    // Gap between pipes (pixels)
-    PIPE_SPAWN_DISTANCE: 350,         // Distance between pipe spawns
+    PIPE_SPAWN_DISTANCE: 350,         // Base distance between pipe spawns
+    PIPE_SPAWN_DISTANCE_WITH_NPCS: 450, // Increased distance when NPCs are active
     DIFFICULTY_INCREASE_INTERVAL: 5,   // Points between difficulty increases
     MAX_DIFFICULTY: 2.5,              // Maximum difficulty multiplier
     NPC_SPAWN_SCORES: [10, 50],       // Scores when NPCs start appearing

@@ -58,10 +58,13 @@ export class Pipe {
         const gapTop = this.gapY;
         const gapBottom = this.gapY + this.gapSize;
         
-        // Check if character is within pipe's horizontal bounds
-        if (charRect.right > pipeLeft && charRect.left < pipeRight) {
-            // Check if character is outside the gap (collision)
-            if (charRect.top < gapTop || charRect.bottom > gapBottom) {
+        // Add small collision padding to make collision detection more precise
+        const collisionPadding = 5;
+        
+        // Check if character is within pipe's horizontal bounds (with padding)
+        if (charRect.right > (pipeLeft + collisionPadding) && charRect.left < (pipeRight - collisionPadding)) {
+            // Check if character is outside the gap (collision) with padding
+            if (charRect.top < (gapTop - collisionPadding) || charRect.bottom > (gapBottom + collisionPadding)) {
                 return true;
             }
         }

@@ -78,27 +78,24 @@ export class NPC {
 
     checkCollision(charRect) {
         // Add collision padding to make collision detection more precise
-        // This reduces the collision area to the actual visible parts of the characters
+        // This reduces the collision area to the actual visible parts of the NPC
+        // Note: charRect is already adjusted with padding in game.js, so we only apply padding to NPC
         const collisionPadding = GAME_CONFIG.CURRENT_NPC_COLLISION_PADDING;
         
+        // Get the actual DOM element position (same as debug visualization)
+        const npcDOMRect = this.element.getBoundingClientRect();
         const npcRect = {
-            left: this.x + collisionPadding,
-            right: this.x + this.width - collisionPadding,
-            top: this.y + collisionPadding,
-            bottom: this.y + this.height - collisionPadding
+            left: npcDOMRect.left + collisionPadding,
+            right: npcDOMRect.right - collisionPadding,
+            top: npcDOMRect.top + collisionPadding,
+            bottom: npcDOMRect.bottom - collisionPadding
         };
         
-        const charCollisionRect = {
-            left: charRect.left + collisionPadding,
-            right: charRect.right - collisionPadding,
-            top: charRect.top + collisionPadding,
-            bottom: charRect.bottom - collisionPadding
-        };
-        
-        return (charCollisionRect.right > npcRect.left && 
-                charCollisionRect.left < npcRect.right && 
-                charCollisionRect.bottom > npcRect.top && 
-                charCollisionRect.top < npcRect.bottom);
+        // Use the character rect as-is (already adjusted in game.js)
+        return (charRect.right > npcRect.left && 
+                charRect.left < npcRect.right && 
+                charRect.bottom > npcRect.top && 
+                charRect.top < npcRect.bottom);
     }
 
     remove() {

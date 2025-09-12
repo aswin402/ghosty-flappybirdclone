@@ -11,7 +11,8 @@ export const GAME_CONFIG = {
     PIPE_GAP: 380, // Desktop gap - Increased from 180 for more vertical space
     PIPE_GAP_MOBILE: 240, // Mobile gap - Smaller for mobile devices
     PIPE_WIDTH: 80,
-    PIPE_SPAWN_DISTANCE: 350, // Increased from 200 for more horizontal space
+    PIPE_SPAWN_DISTANCE: 350, // Base distance between pipe spawns
+    PIPE_SPAWN_DISTANCE_WITH_NPCS: 450, // Increased distance when NPCs are active
     MIN_PIPE_HEIGHT: 100,
     MAX_PIPE_HEIGHT: window.innerHeight - 300,
     DIFFICULTY_INCREASE_INTERVAL: 5, // Every 5 points
@@ -30,12 +31,17 @@ export const GAME_CONFIG = {
     NPC_SPAWN_SCORES: [10, 50], // Scores at which NPCs start spawning (max NPCs at score 50)
     NPC_SPEED: 4, // Base NPC movement speed
     NPC_SPAWN_INTERVAL: 180, // Frames between NPC spawns (reduced for more frequent spawning)
-    NPC_COLLISION_PADDING: 25, // Padding to make NPC collision detection more precise
-    NPC_COLLISION_PADDING_MOBILE: 20, // Smaller padding for mobile devices
+    NPC_COLLISION_PADDING: 35, // Padding to make NPC collision detection more precise (increased for smaller hitbox)
+    NPC_COLLISION_PADDING_MOBILE: 30, // Smaller padding for mobile devices
     
     // Dynamic collision padding based on device
     get CURRENT_NPC_COLLISION_PADDING() {
         return isMobile() ? this.NPC_COLLISION_PADDING_MOBILE : this.NPC_COLLISION_PADDING;
+    },
+    
+    // Dynamic pipe spawn distance based on whether NPCs are active
+    getCurrentPipeSpawnDistance(score) {
+        return score >= this.NPC_SPAWN_SCORES[0] ? this.PIPE_SPAWN_DISTANCE_WITH_NPCS : this.PIPE_SPAWN_DISTANCE;
     },
     
     // Music configuration

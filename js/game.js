@@ -218,8 +218,11 @@ export class Game {
     spawnPipes() {
         this.pipeSpawnTimer++;
         
+        // Get current pipe spawn distance (increases when NPCs are active)
+        const currentPipeSpawnDistance = GAME_CONFIG.getCurrentPipeSpawnDistance(this.score);
+        
         // Spawn new pipe when timer reaches threshold
-        if (this.pipeSpawnTimer >= GAME_CONFIG.PIPE_SPAWN_DISTANCE / this.moveSpeed) {
+        if (this.pipeSpawnTimer >= currentPipeSpawnDistance / this.moveSpeed) {
             this.pipeSpawnTimer = 0;
             
             // Calculate random gap position using dynamic pipe gap
@@ -237,16 +240,25 @@ export class Game {
     checkCollisions() {
         const charRect = this.char.getBoundingClientRect();
         
+        // Add collision padding to make the character hitbox slightly smaller for better gameplay
+        const charCollisionPadding = 25;
+        const adjustedCharRect = {
+            left: charRect.left + charCollisionPadding,
+            right: charRect.right - charCollisionPadding,
+            top: charRect.top + charCollisionPadding,
+            bottom: charRect.bottom - charCollisionPadding
+        };
+        
         // Check pipe collisions
         for (const pipe of this.pipes) {
-            // Check collision
-            if (pipe.checkCollision(charRect)) {
+            // Check collision with adjusted character rect
+            if (pipe.checkCollision(adjustedCharRect)) {
                 this.charImg.src = "assets/kout.png";
                 this.gameOver();
                 return;
             }
             
-            // Check scoring
+            // Check scoring (use original rect for scoring to be fair)
             if (pipe.checkScore(charRect)) {
                 this.score++;
                 updateScoreDisplay(this.score, this.highScore, this.scoreVal, this.scoreTitle);
@@ -255,9 +267,9 @@ export class Game {
             }
         }
         
-        // Check NPC collisions
+        // Check NPC collisions with adjusted character rect
         for (const npc of this.npcs) {
-            if (npc.checkCollision(charRect)) {
+            if (npc.checkCollision(adjustedCharRect)) {
                 this.charImg.src = "assets/kout.png";
                 this.gameOver();
                 return;
