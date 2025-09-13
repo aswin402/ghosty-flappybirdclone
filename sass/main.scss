@@ -8,6 +8,11 @@ $shadow-color: rgba(0, 0, 0, 0.8);
 $pipe-gradient-start: #2d3748;
 $pipe-gradient-end: #1a202c;
 
+// Animation timing functions for smoother animations
+$ease-out-quart: cubic-bezier(0.25, 1, 0.5, 1);
+$ease-in-out-quart: cubic-bezier(0.76, 0, 0.24, 1);
+$ease-out-back: cubic-bezier(0.34, 1.56, 0.64, 1);
+
 // Mixins
 @mixin text-shadow($color: $shadow-color) {
     text-shadow: 2px 2px 4px $color, 0 0 10px rgba(0, 0, 0, 0.5);
@@ -15,14 +20,29 @@ $pipe-gradient-end: #1a202c;
 
 @mixin pipe-gradient {
     background: linear-gradient(90deg, $pipe-gradient-start 0%, $pipe-gradient-end 50%, $pipe-gradient-start 100%);
-    box-shadow: 
+    box-shadow:
         inset 0 0 20px rgba(255, 255, 255, 0.1),
         0 4px 8px rgba(0, 0, 0, 0.3),
         0 0 0 2px #000000;
 }
 
-@mixin smooth-transition($property: all, $duration: 0.3s) {
-    transition: $property $duration ease-in-out;
+@mixin smooth-transition($property: all, $duration: 0.3s, $timing: $ease-out-quart) {
+    transition: $property $duration $timing;
+}
+
+@mixin mobile-optimized {
+    -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}
+
+@mixin hardware-acceleration {
+    transform: translateZ(0);
+    -webkit-transform: translateZ(0);
+    will-change: transform;
 }
 
 // Reset and base styles
@@ -32,12 +52,18 @@ $pipe-gradient-end: #1a202c;
     box-sizing: border-box;
 }
 
-html, body {
+html,
+body {
     overflow: hidden;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    height: 100%;
+    width: 100%;
+    position: fixed;
+    @include mobile-optimized;
 }
 
 body {
+
     // Background with parallax effect
     .bg {
         height: 100vh;
@@ -48,7 +74,7 @@ body {
         -webkit-background-size: cover;
         -o-background-size: cover;
         position: relative;
-        
+
         // Add animated clouds or particles overlay
         &::before {
             content: '';
@@ -57,10 +83,10 @@ body {
             left: 0;
             right: 0;
             bottom: 0;
-            background: linear-gradient(180deg, 
-                rgba(135, 206, 235, 0.1) 0%, 
-                rgba(135, 206, 235, 0.05) 50%, 
-                rgba(255, 255, 255, 0.1) 100%);
+            background: linear-gradient(180deg,
+                    rgba(135, 206, 235, 0.1) 0%,
+                    rgba(135, 206, 235, 0.05) 50%,
+                    rgba(255, 255, 255, 0.1) 100%);
             pointer-events: none;
             z-index: 1;
         }
@@ -73,14 +99,31 @@ body {
         width: 150px;
         transform: translate(-50%, -50%);
         z-index: 100;
-        @include smooth-transition(transform, 0.1s);
-        
+        @include smooth-transition(transform, 0.08s, $ease-out-quart);
+        @include hardware-acceleration;
+
         // Add subtle glow effect
         filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.3));
-        
+
+        // Smooth rotation animation for jump
+        &.jumping {
+            transform: translate(-50%, -50%) rotate(-15deg);
+            @include smooth-transition(transform, 0.15s, $ease-out-back);
+        }
+
+        &.falling {
+            transform: translate(-50%, -50%) rotate(15deg);
+            @include smooth-transition(transform, 0.3s, $ease-in-out-quart);
+        }
+
         // Hover effect for better interactivity
         &:hover {
             filter: drop-shadow(0 0 15px rgba(255, 255, 255, 0.5));
+        }
+
+        // Active state for touch feedback
+        &:active {
+            transform: translate(-50%, -50%) scale(0.95);
         }
     }
 
@@ -88,17 +131,24 @@ body {
     .npc-character {
         position: fixed;
         z-index: 75;
-        @include smooth-transition(all, 0.1s);
-        
+        @include smooth-transition(all, 0.1s, $ease-out-quart);
+        @include hardware-acceleration;
+
         // Add red glow effect to distinguish from player
         filter: drop-shadow(0 0 15px rgba(255, 0, 0, 0.5));
-        
-        // Subtle animation
-        animation: npcFloat 2s ease-in-out infinite alternate;
-        
+
+        // Subtle animation with better easing
+        animation: npcFloat 2.5s $ease-in-out-quart infinite alternate;
+
         // Hover effect
         &:hover {
             filter: drop-shadow(0 0 20px rgba(255, 0, 0, 0.8));
+            transform: scale(1.05);
+        }
+
+        // Entrance animation
+        &.spawning {
+            animation: npcSpawn 0.5s $ease-out-back;
         }
     }
 
@@ -107,8 +157,14 @@ body {
         position: fixed;
         @include pipe-gradient;
         z-index: 50;
-        @include smooth-transition(transform, 0.1s);
-        
+        @include smooth-transition(transform, 0.15s, $ease-out-quart);
+        @include hardware-acceleration;
+
+        // Entrance animation
+        &.spawning {
+            animation: pipeSlideIn 0.4s $ease-out-back;
+        }
+
         // Add pipe cap styling
         &::before {
             content: '';
@@ -120,21 +176,26 @@ body {
             border: 2px solid #000000;
             border-radius: 4px;
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+            @include smooth-transition(all, 0.15s, $ease-out-quart);
         }
-        
+
         // Top pipe cap
         &.pipe_top::before {
             bottom: -15px;
         }
-        
+
         // Bottom pipe cap
         &.pipe_bottom::before {
             top: -15px;
         }
-        
+
         // Add subtle animation on hover
         &:hover {
             transform: scaleX(1.02);
+
+            &::before {
+                box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
+            }
         }
     }
 
@@ -152,7 +213,7 @@ body {
         text-align: center;
         line-height: 1.4;
         @include smooth-transition;
-        
+
         // Animated text for better UX
         small {
             font-size: 1.2rem;
@@ -164,17 +225,17 @@ body {
 
     // Enhanced message box styling
     .messageStyle {
-        background: linear-gradient(135deg, 
-            rgba(0, 0, 0, 0.9) 0%, 
-            rgba(45, 55, 72, 0.9) 100%);
+        background: linear-gradient(135deg,
+                rgba(0, 0, 0, 0.9) 0%,
+                rgba(45, 55, 72, 0.9) 100%);
         padding: 25px 30px;
         border-radius: 15px;
         border: 3px solid rgba(255, 255, 255, 0.3);
         backdrop-filter: blur(10px);
-        box-shadow: 
+        box-shadow:
             0 8px 32px rgba(0, 0, 0, 0.3),
             inset 0 1px 0 rgba(255, 255, 255, 0.1);
-        
+
         // Subtle animation
         animation: messageGlow 2s ease-in-out infinite alternate;
     }
@@ -194,12 +255,12 @@ body {
         flex-direction: row;
         gap: 1rem;
         align-items: center;
-        
-        .score-title {   
+
+        .score-title {
             font-weight: bold;
             color: $accent-color;
         }
-        
+
         .score-val {
             font-weight: normal;
             font-size: 2rem;
@@ -224,13 +285,14 @@ body {
 // Animations
 @keyframes messageGlow {
     0% {
-        box-shadow: 
+        box-shadow:
             0 8px 32px rgba(0, 0, 0, 0.3),
             inset 0 1px 0 rgba(255, 255, 255, 0.1),
             0 0 20px rgba(104, 211, 145, 0.3);
     }
+
     100% {
-        box-shadow: 
+        box-shadow:
             0 8px 32px rgba(0, 0, 0, 0.3),
             inset 0 1px 0 rgba(255, 255, 255, 0.1),
             0 0 30px rgba(104, 211, 145, 0.5);
@@ -238,10 +300,13 @@ body {
 }
 
 @keyframes pulse {
-    0%, 100% {
+
+    0%,
+    100% {
         opacity: 0.6;
         transform: translate(-50%, -50%) scale(1);
     }
+
     50% {
         opacity: 1;
         transform: translate(-50%, -50%) scale(1.1);
@@ -252,10 +317,12 @@ body {
     0% {
         transform: scale(1);
     }
+
     50% {
         transform: scale(1.2);
         color: #ffd700;
     }
+
     100% {
         transform: scale(1);
     }
@@ -263,89 +330,280 @@ body {
 
 @keyframes npcFloat {
     0% {
-        transform: translateY(0px);
+        transform: translateY(0px) rotate(0deg);
         filter: drop-shadow(0 0 15px rgba(255, 0, 0, 0.5));
     }
+
+    50% {
+        transform: translateY(-8px) rotate(2deg);
+        filter: drop-shadow(0 0 18px rgba(255, 0, 0, 0.6));
+    }
+
     100% {
-        transform: translateY(-10px);
+        transform: translateY(-15px) rotate(-1deg);
         filter: drop-shadow(0 0 20px rgba(255, 0, 0, 0.7));
     }
 }
 
+@keyframes npcSpawn {
+    0% {
+        transform: scale(0) rotate(180deg);
+        opacity: 0;
+        filter: drop-shadow(0 0 30px rgba(255, 0, 0, 1));
+    }
+
+    50% {
+        transform: scale(1.2) rotate(90deg);
+        opacity: 0.8;
+    }
+
+    100% {
+        transform: scale(1) rotate(0deg);
+        opacity: 1;
+        filter: drop-shadow(0 0 15px rgba(255, 0, 0, 0.5));
+    }
+}
+
+@keyframes pipeSlideIn {
+    0% {
+        transform: translateX(100px) scaleY(0.8);
+        opacity: 0;
+    }
+
+    50% {
+        transform: translateX(20px) scaleY(1.05);
+        opacity: 0.7;
+    }
+
+    100% {
+        transform: translateX(0) scaleY(1);
+        opacity: 1;
+    }
+}
+
+@keyframes scoreParticle {
+    0% {
+        transform: translate(-50%, -50%) scale(0) rotate(0deg);
+        opacity: 1;
+    }
+
+    50% {
+        transform: translate(-50%, -150%) scale(1.2) rotate(180deg);
+        opacity: 0.8;
+    }
+
+    100% {
+        transform: translate(-50%, -200%) scale(0.5) rotate(360deg);
+        opacity: 0;
+    }
+}
+
+@keyframes gameStartPulse {
+    0% {
+        transform: translate(-50%, -50%) scale(1);
+        opacity: 0.8;
+    }
+
+    50% {
+        transform: translate(-50%, -50%) scale(1.05);
+        opacity: 1;
+    }
+
+    100% {
+        transform: translate(-50%, -50%) scale(1);
+        opacity: 0.8;
+    }
+}
+
 // Responsive design
+// Large tablets and small desktops
+@media (max-width: 1024px) {
+    body {
+        .char {
+            height: 130px;
+            width: 130px;
+        }
+
+        .msg {
+            font-size: 1.8rem;
+            padding: 0 30px;
+        }
+
+        .score {
+            font-size: 1.6rem;
+
+            .score-val {
+                font-size: 1.8rem;
+            }
+        }
+    }
+}
+
+// Tablets and mobile landscape
 @media (max-width: 768px) {
     body {
         .char {
             height: 120px;
             width: 120px;
+
+            // Enhanced touch feedback
+            &:active {
+                transform: translate(-50%, -50%) scale(0.9);
+                @include smooth-transition(transform, 0.1s, $ease-out-back);
+            }
         }
-        
+
         .npc-character {
             height: 100px !important;
             width: 100px !important;
         }
-        
+
         .msg {
             font-size: 1.5rem;
             padding: 0 20px;
-            
+            line-height: 1.3;
+
             small {
                 font-size: 1rem;
+                margin-top: 8px;
             }
         }
-        
+
         .messageStyle {
-            padding: 20px;
-            border-radius: 10px;
+            padding: 20px 25px;
+            border-radius: 12px;
+            border-width: 2px;
         }
-        
+
         .score {
             font-size: 1.4rem;
-            
+            gap: 0.8rem;
+
             .score-val {
                 font-size: 1.6rem;
             }
         }
-        
+
         .pipe_sprite {
             &::before {
-                height: 20px;
+                height: 25px;
+                width: calc(100% + 6px);
+                left: -3px;
             }
-            
+
             &.pipe_top::before {
-                bottom: -10px;
+                bottom: -12px;
             }
-            
+
             &.pipe_bottom::before {
-                top: -10px;
+                top: -12px;
             }
+        }
+
+        .pause-indicator {
+            font-size: 3rem;
         }
     }
 }
 
+// Mobile portrait
 @media (max-width: 480px) {
     body {
         .char {
             height: 100px;
             width: 100px;
+
+            // More pronounced touch feedback for small screens
+            &:active {
+                transform: translate(-50%, -50%) scale(0.85);
+                @include smooth-transition(transform, 0.08s, $ease-out-back);
+            }
         }
-        
+
         .npc-character {
             height: 80px !important;
             width: 80px !important;
         }
-        
+
         .msg {
             font-size: 1.2rem;
             top: 25vh;
+            padding: 0 15px;
+            line-height: 1.2;
+
+            small {
+                font-size: 0.9rem;
+                margin-top: 6px;
+            }
         }
-        
+
+        .messageStyle {
+            padding: 15px 20px;
+            border-radius: 10px;
+            border-width: 2px;
+        }
+
         .score {
             font-size: 1.2rem;
             top: 3vh;
-            
+            gap: 0.6rem;
+            flex-direction: column;
+
             .score-val {
                 font-size: 1.4rem;
+            }
+        }
+
+        .pipe_sprite {
+            &::before {
+                height: 20px;
+                width: calc(100% + 4px);
+                left: -2px;
+            }
+
+            &.pipe_top::before {
+                bottom: -10px;
+            }
+
+            &.pipe_bottom::before {
+                top: -10px;
+            }
+        }
+
+        .pause-indicator {
+            font-size: 2.5rem;
+        }
+    }
+}
+
+// Very small screens
+@media (max-width: 360px) {
+    body {
+        .char {
+            height: 90px;
+            width: 90px;
+        }
+
+        .npc-character {
+            height: 70px !important;
+            width: 70px !important;
+        }
+
+        .msg {
+            font-size: 1.1rem;
+            top: 30vh;
+
+            small {
+                font-size: 0.8rem;
+            }
+        }
+
+        .score {
+            font-size: 1.1rem;
+            top: 2vh;
+
+            .score-val {
+                font-size: 1.3rem;
             }
         }
     }
@@ -353,8 +611,121 @@ body {
 
 // High score celebration effect
 .new-high-score {
-    animation: scoreIncrease 0.5s ease-in-out;
+    animation: scoreIncrease 0.5s $ease-out-back;
     color: #ffd700 !important;
+}
+
+// Particle effects
+.score-particle {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    background: radial-gradient(circle, #ffd700 0%, #ffed4e 50%, transparent 100%);
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 150;
+    animation: scoreParticle 1s $ease-out-quart forwards;
+
+    &::before {
+        content: '+1';
+        position: absolute;
+        top: -5px;
+        left: 50%;
+        transform: translateX(-50%);
+        font-size: 12px;
+        font-weight: bold;
+        color: #ffd700;
+        text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+    }
+}
+
+// Game state animations
+.game-start {
+    animation: gameStartPulse 2s $ease-in-out-quart infinite;
+}
+
+.game-over-shake {
+    animation: gameOverShake 0.5s $ease-out-quart;
+}
+
+@keyframes gameOverShake {
+
+    0%,
+    100% {
+        transform: translate(-50%, -50%) translateX(0);
+    }
+
+    10%,
+    30%,
+    50%,
+    70%,
+    90% {
+        transform: translate(-50%, -50%) translateX(-5px);
+    }
+
+    20%,
+    40%,
+    60%,
+    80% {
+        transform: translate(-50%, -50%) translateX(5px);
+    }
+}
+
+// Loading and transition effects
+.fade-in {
+    animation: fadeIn 0.5s $ease-out-quart;
+}
+
+.fade-out {
+    animation: fadeOut 0.3s $ease-out-quart forwards;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes fadeOut {
+    from {
+        opacity: 1;
+        transform: translateY(0);
+    }
+
+    to {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+}
+
+// Touch feedback
+.touch-feedback {
+    position: absolute;
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.3) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 120;
+    animation: touchRipple 0.6s $ease-out-quart forwards;
+}
+
+@keyframes touchRipple {
+    0% {
+        transform: scale(0);
+        opacity: 1;
+    }
+
+    100% {
+        transform: scale(2);
+        opacity: 0;
+    }
 }
 
 // Debug mode styles
@@ -362,12 +733,20 @@ body {
     pointer-events: none;
     z-index: 200;
     opacity: 0.7;
-    
-    &:nth-child(odd) {
-        background-color: rgba(255, 0, 0, 0.2);
+    border: 2px solid;
+
+    &.char-debug {
+        border-color: #00ff00;
+        background-color: rgba(0, 255, 0, 0.1);
     }
-    
-    &:nth-child(even) {
-        background-color: rgba(0, 0, 255, 0.2);
+
+    &.pipe-debug {
+        border-color: #ff0000;
+        background-color: rgba(255, 0, 0, 0.1);
+    }
+
+    &.npc-debug {
+        border-color: #0000ff;
+        background-color: rgba(0, 0, 255, 0.1);
     }
 }

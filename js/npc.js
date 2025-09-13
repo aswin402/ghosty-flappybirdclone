@@ -49,7 +49,7 @@ export class NPC {
     createElement() {
         this.element = document.createElement('img');
         this.element.src = this.npcImage;
-        this.element.className = 'npc-character';
+        this.element.className = 'npc-character spawning';
         this.element.style.position = 'fixed';
         this.element.style.left = this.x + 'px';
         this.element.style.top = this.y + 'px';
@@ -60,6 +60,11 @@ export class NPC {
         // No transform needed - using correct left-facing sprites
 
         document.body.appendChild(this.element);
+        
+        // Remove spawning animation class after animation completes
+        setTimeout(() => {
+            this.element.classList.remove('spawning');
+        }, 500);
     }
 
     update(gameSpeed = 1) {
@@ -67,8 +72,14 @@ export class NPC {
         this.x -= this.speed * (gameSpeed / GAME_CONFIG.PIPE_SPEED);
         this.element.style.left = this.x + 'px';
 
-        // Keep vertical position fixed (linear horizontal movement only)
-        this.element.style.top = this.y + 'px';
+        // Add subtle vertical oscillation for more dynamic movement
+        const time = Date.now() * this.verticalFrequency;
+        const oscillation = Math.sin(time + this.verticalOffset) * this.verticalAmplitude;
+        const newY = this.y + oscillation;
+        
+        // Ensure NPC stays within screen bounds
+        const clampedY = Math.max(50, Math.min(newY, window.innerHeight - this.height - 50));
+        this.element.style.top = clampedY + 'px';
     }
 
     isOffScreen() {
@@ -98,9 +109,26 @@ export class NPC {
                 charRect.top < npcRect.bottom);
     }
 
+    handleResize() {
+        // Ensure NPC stays within new screen bounds
+        const maxY = window.innerHeight - this.height - 50;
+        if (this.y > maxY) {
+            this.y = maxY;
+            this.element.style.top = this.y + 'px';
+        }
+    }
+
     remove() {
+        // Add fade-out animation before removal
         if (this.element && this.element.parentNode) {
-            this.element.parentNode.removeChild(this.element);
+            this.element.style.transition = 'opacity 0.3s ease-out, transform 0.3s ease-out';
+            this.element.style.opacity = '0';
+            this.element.style.transform = 'scale(0.8)';
+            setTimeout(() => {
+                if (this.element.parentNode) {
+                    this.element.parentNode.removeChild(this.element);
+                }
+            }, 300);
         }
     }
 }

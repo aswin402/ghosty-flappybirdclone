@@ -21,7 +21,7 @@ export class Pipe {
     createElements() {
         // Top pipe
         this.topPipe = document.createElement('div');
-        this.topPipe.className = 'pipe_sprite pipe_top';
+        this.topPipe.className = 'pipe_sprite pipe_top spawning';
         this.topPipe.style.position = 'fixed';
         this.topPipe.style.left = this.x + 'px';
         this.topPipe.style.top = '0px';
@@ -32,7 +32,7 @@ export class Pipe {
         
         // Bottom pipe
         this.bottomPipe = document.createElement('div');
-        this.bottomPipe.className = 'pipe_sprite pipe_bottom';
+        this.bottomPipe.className = 'pipe_sprite pipe_bottom spawning';
         this.bottomPipe.style.position = 'fixed';
         this.bottomPipe.style.left = this.x + 'px';
         this.bottomPipe.style.top = (this.gapY + this.gapSize) + 'px';
@@ -40,6 +40,12 @@ export class Pipe {
         this.bottomPipe.style.height = (window.innerHeight - this.gapY - this.gapSize) + 'px';
         this.bottomPipe.style.zIndex = '50';
         document.body.appendChild(this.bottomPipe);
+        
+        // Remove spawning animation class after animation completes
+        setTimeout(() => {
+            this.topPipe.classList.remove('spawning');
+            this.bottomPipe.classList.remove('spawning');
+        }, 400);
     }
     
     update(moveSpeed) {
@@ -79,12 +85,32 @@ export class Pipe {
         return false;
     }
     
+    handleResize() {
+        // Update bottom pipe height on resize
+        if (this.bottomPipe) {
+            this.bottomPipe.style.height = (window.innerHeight - this.gapY - this.gapSize) + 'px';
+        }
+    }
+    
     remove() {
+        // Add fade-out animation before removal
         if (this.topPipe && this.topPipe.parentNode) {
-            this.topPipe.parentNode.removeChild(this.topPipe);
+            this.topPipe.style.transition = 'opacity 0.2s ease-out';
+            this.topPipe.style.opacity = '0';
+            setTimeout(() => {
+                if (this.topPipe.parentNode) {
+                    this.topPipe.parentNode.removeChild(this.topPipe);
+                }
+            }, 200);
         }
         if (this.bottomPipe && this.bottomPipe.parentNode) {
-            this.bottomPipe.parentNode.removeChild(this.bottomPipe);
+            this.bottomPipe.style.transition = 'opacity 0.2s ease-out';
+            this.bottomPipe.style.opacity = '0';
+            setTimeout(() => {
+                if (this.bottomPipe.parentNode) {
+                    this.bottomPipe.parentNode.removeChild(this.bottomPipe);
+                }
+            }, 200);
         }
     }
 }

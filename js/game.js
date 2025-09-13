@@ -115,6 +115,25 @@ export class Game {
         this.charDy = GAME_CONFIG.JUMP_FORCE;
         this.charImg.src = 'assets/char.png';
         playSound(sound_wing);
+        
+        // Add smooth jump animation
+        this.addJumpAnimation();
+    }
+
+    addJumpAnimation() {
+        // Remove any existing animation classes
+        this.char.classList.remove('jumping', 'falling');
+        
+        // Add jumping animation
+        this.char.classList.add('jumping');
+        
+        // Remove jumping class after animation
+        setTimeout(() => {
+            this.char.classList.remove('jumping');
+            if (this.gameState === GAME_STATES.PLAYING) {
+                this.char.classList.add('falling');
+            }
+        }, 150);
     }
 
     pauseGame() {
@@ -306,11 +325,17 @@ export class Game {
             cancelAnimationFrame(this.animationId);
         }
         
+        // Add game over shake animation
+        this.char.classList.remove('jumping', 'falling');
+        this.char.classList.add('game-over-shake');
+        
         // Update high score
         this.updateHighScore();
         
-        // Show game over message
-        showGameOverMessage(this.score, this.highScore, this.msg, this.scoreTitle, this.charImg);
+        // Show game over message with delay for better UX
+        setTimeout(() => {
+            showGameOverMessage(this.score, this.highScore, this.msg, this.scoreTitle, this.charImg);
+        }, 500);
         
         // Play death sound and game over music
         playSound(sound_die);
@@ -399,10 +424,34 @@ spawnNPCs() {
         // Update game configuration for new window size
         GAME_CONFIG.MAX_PIPE_HEIGHT = window.innerHeight - 300;
         
+        // Update background rect for collision detection
+        this.bgRect = this.bg.getBoundingClientRect();
+        
         // Reset character position if game is not playing
         if (this.gameState !== GAME_STATES.PLAYING) {
             this.char.style.top = window.innerHeight * 0.4 + 'px';
             this.char.style.left = window.innerWidth * 0.3 + 'px';
         }
+        
+        // Adjust character position during gameplay to prevent going off-screen
+        if (this.gameState === GAME_STATES.PLAYING) {
+            const charRect = this.char.getBoundingClientRect();
+            const maxTop = window.innerHeight - charRect.height;
+            const currentTop = parseInt(this.char.style.top);
+            
+            if (currentTop > maxTop) {
+                this.char.style.top = maxTop + 'px';
+            }
+        }
+        
+        // Update pipe positions if needed
+        this.pipes.forEach(pipe => {
+            pipe.handleResize();
+        });
+        
+        // Update NPC positions if needed
+        this.npcs.forEach(npc => {
+            npc.handleResize();
+        });
     }
 }

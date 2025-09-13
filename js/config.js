@@ -1,22 +1,44 @@
-// Mobile detection utility
+// Enhanced mobile detection utility
 const isMobile = () => {
-    return window.innerWidth <= 768 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    return window.innerWidth <= 768 || 
+           /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+           ('ontouchstart' in window) ||
+           (navigator.maxTouchPoints > 0);
+};
+
+// Touch device detection
+const isTouchDevice = () => {
+    return ('ontouchstart' in window) || 
+           (navigator.maxTouchPoints > 0) || 
+           (navigator.msMaxTouchPoints > 0);
+};
+
+// Performance detection
+const isLowPerformanceDevice = () => {
+    return navigator.hardwareConcurrency <= 2 || 
+           window.innerWidth <= 480 ||
+           /Android.*Chrome\/[0-5][0-9]/i.test(navigator.userAgent);
 };
 
 // Game configuration
 export const GAME_CONFIG = {
-    PIPE_SPEED: 3,
-    GRAVITY: 0.5,
-    JUMP_FORCE: -7.6,
+    // Base game physics
+    PIPE_SPEED: isMobile() ? 2.5 : 3, // Slightly slower on mobile
+    GRAVITY: isMobile() ? 0.45 : 0.5, // Slightly less gravity on mobile
+    JUMP_FORCE: isMobile() ? -7.2 : -7.6, // Slightly less jump force on mobile
+    
+    // Pipe configuration
     PIPE_GAP: 380, // Desktop gap - Increased from 180 for more vertical space
-    PIPE_GAP_MOBILE: 240, // Mobile gap - Smaller for mobile devices
+    PIPE_GAP_MOBILE: isTouchDevice() ? 280 : 240, // Larger gap for touch devices
     PIPE_WIDTH: 80,
     PIPE_SPAWN_DISTANCE: 350, // Base distance between pipe spawns
     PIPE_SPAWN_DISTANCE_WITH_NPCS: 450, // Increased distance when NPCs are active
     MIN_PIPE_HEIGHT: 100,
     MAX_PIPE_HEIGHT: window.innerHeight - 300,
+    
+    // Difficulty settings
     DIFFICULTY_INCREASE_INTERVAL: 5, // Every 5 points
-    MAX_DIFFICULTY: 2.5,
+    MAX_DIFFICULTY: isLowPerformanceDevice() ? 2.0 : 2.5, // Lower max difficulty on low-end devices
     
     // Dynamic pipe gap based on device
     get CURRENT_PIPE_GAP() {
@@ -29,10 +51,10 @@ export const GAME_CONFIG = {
     
     // NPC configuration
     NPC_SPAWN_SCORES: [10, 50], // Scores at which NPCs start spawning (max NPCs at score 50)
-    NPC_SPEED: 4, // Base NPC movement speed
-    NPC_SPAWN_INTERVAL: 180, // Frames between NPC spawns (reduced for more frequent spawning)
+    NPC_SPEED: isMobile() ? 3.5 : 4, // Base NPC movement speed (slower on mobile)
+    NPC_SPAWN_INTERVAL: isLowPerformanceDevice() ? 240 : 180, // Frames between NPC spawns (less frequent on low-end devices)
     NPC_COLLISION_PADDING: 35, // Padding to make NPC collision detection more precise (increased for smaller hitbox)
-    NPC_COLLISION_PADDING_MOBILE: 30, // Smaller padding for mobile devices
+    NPC_COLLISION_PADDING_MOBILE: isTouchDevice() ? 40 : 30, // More forgiving collision on touch devices
     
     // Dynamic collision padding based on device
     get CURRENT_NPC_COLLISION_PADDING() {
