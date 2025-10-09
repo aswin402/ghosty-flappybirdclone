@@ -1,4 +1,4 @@
-import { GAME_CONFIG, GAME_STATES } from './config.js';
+import { GAME_CONFIG, GAME_STATES, getDeviceInfo, getQualityLevel } from './config.js';
 import { Pipe } from './pipe.js';
 import { NPC } from './npc.js';
 import { 
@@ -25,6 +25,17 @@ import { debugDrawCollisionBoxes, updateFPS } from './debug.js';
 
 export class Game {
     constructor() {
+        // Performance monitoring
+        this.deviceInfo = getDeviceInfo();
+        this.qualityLevel = getQualityLevel();
+        this.frameCount = 0;
+        this.lastFrameTime = performance.now();
+        this.lastFPSUpdate = performance.now();
+        this.currentFPS = 60;
+        this.deltaTime = 0;
+        this.targetFrameTime = 1000 / GAME_CONFIG.TARGET_FPS;
+        this.collisionCheckInterval = GAME_CONFIG.COLLISION_CHECK_INTERVAL;
+        
         // Game variables
         this.moveSpeed = GAME_CONFIG.PIPE_SPEED;
         this.gravity = GAME_CONFIG.GRAVITY;
@@ -32,47 +43,113 @@ export class Game {
         this.score = 0;
         this.highScore = localStorage.getItem('flappy_high_score') || 0;
         this.pipes = [];
-        this.npcs = []; // Array to store NPC characters
+        this.npcs = [];
         this.gameState = GAME_STATES.START;
         this.charDy = 0;
         this.pipeSpawnTimer = 0;
         this.npcSpawnTimer = 0;
+        this.gameStartTime = 0; // Track when game started for grace period
         this.animationId = null;
-        this.lastMusicScore = 0; // Track last score when music changed
-        this.lastBgScore = 0; // Track last score when background changed
+        this.lastMusicScore = 0;
+        this.lastBgScore = 0;
 
-        // DOM elements
+        // Object pools for better performance
+        this.pipePool = [];
+        this.npcPool = [];
+        this.particlePool = [];
+        
+        // Cached DOM elements
         this.char = document.querySelector('.char');
         this.charImg = document.getElementById('char-1');
         this.scoreVal = document.querySelector('.score-val');
         this.msg = document.querySelector('.msg');
         this.scoreTitle = document.querySelector('.score-title');
         this.bg = document.querySelector('.bg');
+        this.pauseButton = document.getElementById('pause-button');
         this.bgRect = this.bg.getBoundingClientRect();
+        
+        // Cached character rect for performance
+        this.charRect = null;
+        this.charRectUpdateCounter = 0;
 
         this.initializeGame();
+        this.initializeObjectPools();
     }
 
     initializeGame() {
         this.charImg.style.display = 'block';
         showStartMessage(this.highScore, this.msg, this.scoreTitle);
-        
-        // Ensure character starts at correct position
-        this.char.style.top = window.innerHeight * 0.4 + 'px';
+
+        // Ensure character starts at correct position (more centered)
+        this.char.style.top = window.innerHeight * 0.5 + 'px';
         this.char.style.left = window.innerWidth * 0.3 + 'px';
         this.char.style.transform = 'translate(-50%, -50%)';
+
+        // Initialize character rect cache
+        this.updateCharacterRect();
+
+        // Hide pause button initially
+        this.updatePauseButtonVisibility();
+    }
+
+    updatePauseButtonVisibility() {
+        if (this.pauseButton && this.deviceInfo.isMobile) {
+            if (this.gameState === GAME_STATES.PLAYING) {
+                this.pauseButton.style.display = 'block';
+                this.pauseButton.innerHTML = '⏸️';
+            } else if (this.gameState === GAME_STATES.PAUSED) {
+                this.pauseButton.style.display = 'block';
+                this.pauseButton.innerHTML = '▶️';
+            } else {
+                this.pauseButton.style.display = 'none';
+            }
+        }
+    }
+    
+    initializeObjectPools() {
+        // Pre-create pipe objects for pooling
+        for (let i = 0; i < GAME_CONFIG.PIPE_POOL_SIZE; i++) {
+            this.pipePool.push(null); // Will be created on demand
+        }
+        
+        // Pre-create NPC objects for pooling
+        for (let i = 0; i < GAME_CONFIG.NPC_POOL_SIZE; i++) {
+            this.npcPool.push(null); // Will be created on demand
+        }
+        
+        // Pre-create particle objects for pooling (if particles are enabled)
+        if (GAME_CONFIG.ENABLE_PARTICLES) {
+            for (let i = 0; i < GAME_CONFIG.PARTICLE_POOL_SIZE; i++) {
+                this.particlePool.push(null); // Will be created on demand
+            }
+        }
+    }
+    
+    updateCharacterRect() {
+        this.charRect = this.char.getBoundingClientRect();
+        
+        // Add collision padding for better gameplay
+        const padding = this.deviceInfo.screenSize === 'xs' ? 30 : 25;
+        this.charRect = {
+            left: this.charRect.left + padding,
+            right: this.charRect.right - padding,
+            top: this.charRect.top + padding,
+            bottom: this.charRect.bottom - padding
+        };
     }
 
     startGame() {
         this.resetGame();
         this.gameState = GAME_STATES.PLAYING;
+        this.gameStartTime = performance.now(); // Set game start time for grace period
         this.msg.innerHTML = '';
         this.msg.classList.remove('messageStyle');
         this.scoreTitle.innerHTML = `Score: 0 | High: ${this.highScore}`;
-        
+
         // Start background music
         startBackgroundMusic();
-        
+
+        this.updatePauseButtonVisibility();
         this.startGameLoop();
     }
 
@@ -99,9 +176,12 @@ export class Game {
         // Reset character position and appearance
         this.charImg.style.display = 'block';
         this.charImg.src = 'assets/char.png';
-        this.char.style.top = window.innerHeight * 0.4 + 'px';
+        this.char.style.top = window.innerHeight * 0.5 + 'px';
         this.char.style.left = window.innerWidth * 0.3 + 'px';
         this.char.style.transform = 'translate(-50%, -50%)';
+        
+        // Update character rect cache after position reset
+        this.updateCharacterRect();
         
         // Reset background to default
         this.updateBackground(0);
@@ -141,10 +221,12 @@ export class Game {
             this.gameState = GAME_STATES.PAUSED;
             showPauseMessage(this.msg);
             pauseBackgroundMusic();
-            
+
             if (this.animationId) {
                 cancelAnimationFrame(this.animationId);
             }
+
+            this.updatePauseButtonVisibility();
         }
     }
 
@@ -153,6 +235,7 @@ export class Game {
             this.gameState = GAME_STATES.PLAYING;
             hidePauseMessage(this.msg);
             resumeBackgroundMusic();
+            this.updatePauseButtonVisibility();
             this.startGameLoop();
         }
     }
@@ -161,20 +244,46 @@ export class Game {
         if (this.animationId) {
             cancelAnimationFrame(this.animationId);
         }
-        this.gameLoop();
+        // Reset timing to avoid a huge first-frame delta after starting/restarting
+        const now = performance.now();
+        this.lastFrameTime = now;
+        this.lastFPSUpdate = now;
+        this.frameCount = 0;
+        // Kick off the loop with a fresh RAF tick
+        this.animationId = requestAnimationFrame((time) => this.gameLoop(time));
     }
 
-    gameLoop() {
+    gameLoop(currentTime = performance.now()) {
         if (this.gameState !== GAME_STATES.PLAYING) return;
         
+        // Calculate delta time for smooth frame-independent movement
+        const deltaTime = currentTime - this.lastFrameTime;
+        this.lastFrameTime = currentTime;
+        
+        // Performance monitoring
+        this.frameCount++;
+        if (currentTime - this.lastFPSUpdate >= 1000) {
+            this.currentFPS = this.frameCount;
+            this.frameCount = 0;
+            this.lastFPSUpdate = currentTime;
+            
+            // Adjust quality based on performance
+            this.adjustQualityBasedOnPerformance();
+        }
+
+        // Update character rect cache less frequently on low-end devices
+        if (this.frameCount % this.collisionCheckInterval === 0) {
+            this.updateCharacterRect();
+        }
+        
         // Update character physics
-        this.updateCharacter();
+        this.updateCharacter(deltaTime);
         
         // Update pipes
-        this.updatePipes();
+        this.updatePipes(deltaTime);
         
         // Update NPCs
-        this.updateNPCs();
+        this.updateNPCs(deltaTime);
         
         // Spawn new pipes
         this.spawnPipes();
@@ -194,45 +303,116 @@ export class Game {
         // Update performance monitoring
         updateFPS(this.moveSpeed);
         
-        // Debug visualization
-        debugDrawCollisionBoxes(this.char, this.pipes, this.npcs);
+        // Debug visualization (only on desktop for performance)
+        if (GAME_CONFIG.ENABLE_DEBUG && !this.deviceInfo.isMobile) {
+            debugDrawCollisionBoxes(this.char, this.pipes, this.npcs);
+        }
         
         // Continue game loop
-        this.animationId = requestAnimationFrame(() => this.gameLoop());
+        this.animationId = requestAnimationFrame((time) => this.gameLoop(time));
+    }
+    
+    adjustQualityBasedOnPerformance() {
+        const targetFPS = GAME_CONFIG.TARGET_FPS;
+        
+        if (this.currentFPS < targetFPS * 0.8) {
+            // Performance is poor, reduce quality
+            if (this.collisionCheckInterval < 4) {
+                this.collisionCheckInterval++;
+            }
+            
+            // Disable particles if enabled
+            if (GAME_CONFIG.ENABLE_PARTICLES) {
+                GAME_CONFIG.ENABLE_PARTICLES = false;
+                this.clearParticles();
+            }
+        } else if (this.currentFPS > targetFPS * 0.95) {
+            // Performance is good, can increase quality
+            if (this.collisionCheckInterval > 1) {
+                this.collisionCheckInterval--;
+            }
+        }
+    }
+    
+    clearParticles() {
+        // Clear any active particles
+        this.particlePool.forEach(particle => {
+            if (particle && particle.element && particle.element.parentNode) {
+                particle.element.parentNode.removeChild(particle.element);
+            }
+        });
+        this.particlePool = [];
     }
 
-    updateCharacter() {
-        // Apply gravity
-        this.charDy += this.gravity;
+    updateCharacter(deltaTime = 16.67) {
+        // Normalize delta time for consistent physics (60 FPS = 16.67ms)
+        const timeMultiplier = deltaTime / 16.67;
+        
+        // Apply gravity with delta time
+        this.charDy += this.gravity * timeMultiplier;
         
         // Update position
         let currentTop = this.char.offsetTop;
-        let newTop = currentTop + this.charDy;
+        let newTop = currentTop + (this.charDy * timeMultiplier);
         
         this.char.style.top = newTop + 'px';
         this.char.style.transform = 'translate(-50%, -50%)';
         
-        // Check screen boundaries
+        // Add visual feedback for jumping/falling
+        if (this.charDy < -2) {
+            this.char.classList.add('jumping');
+            this.char.classList.remove('falling');
+        } else if (this.charDy > 2) {
+            this.char.classList.add('falling');
+            this.char.classList.remove('jumping');
+        } else {
+            this.char.classList.remove('jumping', 'falling');
+        }
+        
+        // Check screen boundaries with some tolerance and grace period
         const charProps = this.char.getBoundingClientRect();
-        if (charProps.top <= 0 || charProps.bottom >= window.innerHeight) {
+        const tolerance = 10; // Add some tolerance to prevent immediate game over
+        const gracePeriod = 500; // 500ms grace period at game start
+        const timeSinceStart = performance.now() - this.gameStartTime;
+        
+        if (timeSinceStart > gracePeriod && (charProps.top <= -tolerance || charProps.bottom >= window.innerHeight + tolerance)) {
             this.charImg.src = "assets/kout.png";
             this.gameOver();
             return;
         }
     }
 
-    updatePipes() {
+    updatePipes(deltaTime = 16.67) {
+        // Normalize delta time for consistent movement
+        const timeMultiplier = deltaTime / 16.67;
+        
         // Update existing pipes
         for (let i = this.pipes.length - 1; i >= 0; i--) {
             const pipe = this.pipes[i];
-            pipe.update(this.moveSpeed);
+            pipe.update(this.moveSpeed * timeMultiplier);
             
-            // Remove off-screen pipes
+            // Remove off-screen pipes and return to pool
             if (pipe.isOffScreen()) {
-                pipe.remove();
+                this.returnPipeToPool(pipe);
                 this.pipes.splice(i, 1);
             }
         }
+    }
+    
+    returnPipeToPool(pipe) {
+        // Hide the pipe elements instead of resetting position
+        if (pipe.topPipe) pipe.topPipe.style.display = 'none';
+        if (pipe.bottomPipe) pipe.bottomPipe.style.display = 'none';
+        
+        // Return pipe to pool for reuse
+        for (let i = 0; i < this.pipePool.length; i++) {
+            if (this.pipePool[i] === null) {
+                this.pipePool[i] = pipe;
+                return;
+            }
+        }
+        // If pool is full, just remove the pipe
+        pipe.remove();
     }
 
     spawnPipes() {
@@ -251,45 +431,63 @@ export class Game {
             const maxGapY = window.innerHeight - currentPipeGap - GAME_CONFIG.MIN_PIPE_HEIGHT;
             const gapY = Math.random() * (maxGapY - minGapY) + minGapY;
             
-            // Create new pipe with current score for width calculation
-            const newPipe = new Pipe(window.innerWidth, gapY, currentPipeGap, this.score);
+            // Try to reuse pipe from pool
+            let newPipe = null;
+            for (let i = 0; i < this.pipePool.length; i++) {
+                if (this.pipePool[i] !== null) {
+                    newPipe = this.pipePool[i];
+                    this.pipePool[i] = null;
+                    newPipe.reset(window.innerWidth, gapY, currentPipeGap, this.score);
+                    break;
+                }
+            }
+            
+            // If no pipe available in pool, create new one
+            if (!newPipe) {
+                newPipe = new Pipe(window.innerWidth, gapY, currentPipeGap, this.score);
+            }
+            
             this.pipes.push(newPipe);
         }
     }
 
     checkCollisions() {
-        const charRect = this.char.getBoundingClientRect();
-        
-        // Add collision padding to make the character hitbox slightly smaller for better gameplay
-        const charCollisionPadding = 25;
-        const adjustedCharRect = {
-            left: charRect.left + charCollisionPadding,
-            right: charRect.right - charCollisionPadding,
-            top: charRect.top + charCollisionPadding,
-            bottom: charRect.bottom - charCollisionPadding
-        };
+        // Use cached character rect for better performance
+        const charRect = this.charRect || this.char.getBoundingClientRect();
         
         // Check pipe collisions
         for (const pipe of this.pipes) {
-            // Check collision with adjusted character rect
-            if (pipe.checkCollision(adjustedCharRect)) {
+            // Check collision with cached character rect (already has padding applied)
+            if (pipe.checkCollision(charRect)) {
                 this.charImg.src = "assets/kout.png";
                 this.gameOver();
                 return;
             }
             
-            // Check scoring (use original rect for scoring to be fair)
-            if (pipe.checkScore(charRect)) {
+            // Check scoring (use slightly larger rect for scoring to be fair)
+            const scoringRect = {
+                left: charRect.left - 10,
+                right: charRect.right + 10,
+                top: charRect.top - 10,
+                bottom: charRect.bottom + 10
+            };
+            
+            if (pipe.checkScore(scoringRect)) {
                 this.score++;
                 updateScoreDisplay(this.score, this.highScore, this.scoreVal, this.scoreTitle);
-                createScoreParticles(this.char);
+                
+                // Create particles only if enabled for performance
+                if (GAME_CONFIG.ENABLE_PARTICLES) {
+                    createScoreParticles(this.char);
+                }
+                
                 playSound(sound_point);
             }
         }
         
-        // Check NPC collisions with adjusted character rect
+        // Check NPC collisions with cached character rect
         for (const npc of this.npcs) {
-            if (npc.checkCollision(adjustedCharRect)) {
+            if (npc.checkCollision(charRect)) {
                 this.charImg.src = "assets/kout.png";
                 this.gameOver();
                 return;
@@ -342,44 +540,59 @@ export class Game {
         playGameOverMusic();
     }
 
-  updateNPCs() {
-    // Update existing NPCs
-    for (let i = this.npcs.length - 1; i >= 0; i--) {
-        const npc = this.npcs[i];
-        npc.update(this.moveSpeed);
+    updateNPCs(deltaTime = 16.67) {
+        // Normalize delta time for consistent movement
+        const timeMultiplier = deltaTime / 16.67;
         
-        // Remove off-screen NPCs
-        if (npc.isOffScreen()) {
-            npc.remove();
-            this.npcs.splice(i, 1);
-        }
-    }
-}
-
-spawnNPCs() {
-    // Only spawn NPCs if score is high enough
-    if (this.score < GAME_CONFIG.NPC_SPAWN_SCORES[0]) return;
-    
-    this.npcSpawnTimer++;
-    
-    // Determine how many NPCs should be active based on score
-    let maxNPCs = 0;
-    for (let i = 0; i < GAME_CONFIG.NPC_SPAWN_SCORES.length; i++) {
-        if (this.score >= GAME_CONFIG.NPC_SPAWN_SCORES[i]) {
-            maxNPCs = i + 1;
+        // Update existing NPCs
+        for (let i = this.npcs.length - 1; i >= 0; i--) {
+            const npc = this.npcs[i];
+            npc.update(this.moveSpeed * timeMultiplier);
+            
+            // Remove off-screen NPCs and return to pool
+            if (npc.isOffScreen()) {
+                this.returnNPCToPool(npc);
+                this.npcs.splice(i, 1);
+            }
         }
     }
     
-    // Spawn new NPC when timer reaches threshold and we haven't reached max
-    if (this.npcSpawnTimer >= GAME_CONFIG.NPC_SPAWN_INTERVAL && this.npcs.length < maxNPCs) {
-        this.npcSpawnTimer = 0;
-        
-        // Create new NPC (constructor no longer needs direction flag)
-        const newNPC = new NPC(this.score);
-        this.npcs.push(newNPC);
+    returnNPCToPool(npc) {
+        // Return NPC to pool for reuse
+        npc.reset();
+        for (let i = 0; i < this.npcPool.length; i++) {
+            if (this.npcPool[i] === null) {
+                this.npcPool[i] = npc;
+                return;
+            }
+        }
+        // If pool is full, just remove the NPC
+        npc.remove();
     }
-}
 
+    spawnNPCs() {
+        // Only spawn NPCs if score is high enough
+        if (this.score < GAME_CONFIG.NPC_SPAWN_SCORES[0]) return;
+        
+        this.npcSpawnTimer++;
+        
+        // Determine how many NPCs should be active based on score
+        let maxNPCs = 0;
+        for (let i = 0; i < GAME_CONFIG.NPC_SPAWN_SCORES.length; i++) {
+            if (this.score >= GAME_CONFIG.NPC_SPAWN_SCORES[i]) {
+                maxNPCs = i + 1;
+            }
+        }
+        
+        // Spawn new NPC when timer reaches threshold and we haven't reached max
+        if (this.npcSpawnTimer >= GAME_CONFIG.NPC_SPAWN_INTERVAL && this.npcs.length < maxNPCs) {
+            this.npcSpawnTimer = 0;
+            
+            // Create new NPC (constructor no longer needs direction flag)
+            const newNPC = new NPC(this.score);
+            this.npcs.push(newNPC);
+        }
+    }
     
     updateGameElements() {
         // Update background music
@@ -429,7 +642,7 @@ spawnNPCs() {
         
         // Reset character position if game is not playing
         if (this.gameState !== GAME_STATES.PLAYING) {
-            this.char.style.top = window.innerHeight * 0.4 + 'px';
+            this.char.style.top = window.innerHeight * 0.5 + 'px';
             this.char.style.left = window.innerWidth * 0.3 + 'px';
         }
         

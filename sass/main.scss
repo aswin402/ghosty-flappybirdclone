@@ -30,19 +30,33 @@ $ease-out-back: cubic-bezier(0.34, 1.56, 0.64, 1);
     transition: $property $duration $timing;
 }
 
-@mixin mobile-optimized {
+// Remove the old mobile-optimized mixin as it's replaced by mobile-touch-optimization
+
+@mixin hardware-acceleration {
+    transform: translateZ(0);
+    -webkit-transform: translateZ(0);
+    will-change: transform;
+    -webkit-backface-visibility: hidden;
+    backface-visibility: hidden;
+    -webkit-perspective: 1000px;
+    perspective: 1000px;
+}
+
+@mixin performance-optimized {
+    contain: layout style paint;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeSpeed;
+}
+
+@mixin mobile-touch-optimization {
     -webkit-tap-highlight-color: transparent;
     -webkit-touch-callout: none;
     -webkit-user-select: none;
     -moz-user-select: none;
     -ms-user-select: none;
     user-select: none;
-}
-
-@mixin hardware-acceleration {
-    transform: translateZ(0);
-    -webkit-transform: translateZ(0);
-    will-change: transform;
+    touch-action: manipulation;
 }
 
 // Reset and base styles
@@ -59,23 +73,28 @@ body {
     height: 100%;
     width: 100%;
     position: fixed;
-    @include mobile-optimized;
+    @include mobile-touch-optimization;
+    @include performance-optimized;
+
+    // Prevent iOS bounce scrolling
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: none;
 }
 
 body {
 
-    // Background with parallax effect
+    // Background with performance optimizations
     .bg {
         height: 100vh;
         width: 100vw;
-        background: url('../assets/bgimg.jpg') no-repeat center center fixed;
+        background: url('../assets/bgimg.jpg') no-repeat center center;
         background-size: cover;
-        -moz-background-size: cover;
-        -webkit-background-size: cover;
-        -o-background-size: cover;
+        background-attachment: scroll; // Better performance than fixed on mobile
         position: relative;
+        @include hardware-acceleration;
+        @include performance-optimized;
 
-        // Add animated clouds or particles overlay
+        // Optimized overlay for better performance
         &::before {
             content: '';
             position: absolute;
@@ -89,112 +108,216 @@ body {
                     rgba(255, 255, 255, 0.1) 100%);
             pointer-events: none;
             z-index: 1;
+            @include hardware-acceleration;
+        }
+
+        // Mobile-specific optimizations
+        @media (max-width: 768px) {
+            background-attachment: scroll;
+            background-position: center center;
+
+            &::before {
+                // Reduce overlay complexity on mobile
+                background: rgba(135, 206, 235, 0.08);
+            }
         }
     }
 
-    // Enhanced character styling
+    // Enhanced character styling with performance optimizations
     .char {
         position: absolute;
         height: 150px;
         width: 150px;
         transform: translate(-50%, -50%);
         z-index: 100;
-        @include smooth-transition(transform, 0.08s, $ease-out-quart);
         @include hardware-acceleration;
+        @include performance-optimized;
 
-        // Add subtle glow effect
-        filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.3));
+        // Conditional transitions based on device capability
+        @media (prefers-reduced-motion: no-preference) {
+            @include smooth-transition(transform, 0.08s, $ease-out-quart);
+        }
+
+        // Conditional effects based on device performance
+        @media (min-width: 769px) {
+            filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.3));
+
+            &:hover {
+                filter: drop-shadow(0 0 15px rgba(255, 255, 255, 0.5));
+            }
+        }
 
         // Smooth rotation animation for jump
         &.jumping {
             transform: translate(-50%, -50%) rotate(-15deg);
-            @include smooth-transition(transform, 0.15s, $ease-out-back);
+
+            @media (prefers-reduced-motion: no-preference) {
+                @include smooth-transition(transform, 0.15s, $ease-out-back);
+            }
         }
 
         &.falling {
             transform: translate(-50%, -50%) rotate(15deg);
-            @include smooth-transition(transform, 0.3s, $ease-in-out-quart);
+
+            @media (prefers-reduced-motion: no-preference) {
+                @include smooth-transition(transform, 0.3s, $ease-in-out-quart);
+            }
         }
 
-        // Hover effect for better interactivity
-        &:hover {
-            filter: drop-shadow(0 0 15px rgba(255, 255, 255, 0.5));
-        }
-
-        // Active state for touch feedback
+        // Enhanced touch feedback for mobile
         &:active {
             transform: translate(-50%, -50%) scale(0.95);
         }
+
+        // Mobile-specific optimizations
+        @media (max-width: 768px) {
+            // Remove expensive filters on mobile
+            filter: none;
+
+            &:hover {
+                filter: none;
+            }
+
+            // More responsive touch feedback
+            &:active {
+                transform: translate(-50%, -50%) scale(0.9);
+                @include smooth-transition(transform, 0.1s, $ease-out-back);
+            }
+        }
+
+        // Very small screens
+        @media (max-width: 480px) {
+            height: 120px;
+            width: 120px;
+
+            &:active {
+                transform: translate(-50%, -50%) scale(0.85);
+            }
+        }
     }
 
-    // NPC character styling
+    // NPC character styling with performance optimizations
     .npc-character {
         position: fixed;
         z-index: 75;
-        @include smooth-transition(all, 0.1s, $ease-out-quart);
         @include hardware-acceleration;
+        @include performance-optimized;
 
-        // Add red glow effect to distinguish from player
-        filter: drop-shadow(0 0 15px rgba(255, 0, 0, 0.5));
-
-        // Subtle animation with better easing
-        animation: npcFloat 2.5s $ease-in-out-quart infinite alternate;
-
-        // Hover effect
-        &:hover {
-            filter: drop-shadow(0 0 20px rgba(255, 0, 0, 0.8));
-            transform: scale(1.05);
+        // Conditional transitions and effects
+        @media (prefers-reduced-motion: no-preference) {
+            @include smooth-transition(all, 0.1s, $ease-out-quart);
+            animation: npcFloat 2.5s $ease-in-out-quart infinite alternate;
         }
 
-        // Entrance animation
+        // Desktop-only effects
+        @media (min-width: 769px) {
+            filter: drop-shadow(0 0 15px rgba(255, 0, 0, 0.5));
+
+            &:hover {
+                filter: drop-shadow(0 0 20px rgba(255, 0, 0, 0.8));
+                transform: scale(1.05);
+            }
+        }
+
+        // Entrance animation (performance-aware)
         &.spawning {
-            animation: npcSpawn 0.5s $ease-out-back;
+            @media (prefers-reduced-motion: no-preference) {
+                animation: npcSpawn 0.5s $ease-out-back;
+            }
+
+            @media (prefers-reduced-motion: reduce) {
+                opacity: 0;
+                animation: fadeIn 0.3s ease-out forwards;
+            }
+        }
+
+        // Mobile optimizations
+        @media (max-width: 768px) {
+            // Remove expensive effects
+            filter: none;
+            animation: none;
+
+            &:hover {
+                filter: none;
+                transform: none;
+            }
         }
     }
 
-    // Enhanced pipe styling with gradients and better visuals
+    // Enhanced pipe styling with performance optimizations
     .pipe_sprite {
         position: fixed;
         @include pipe-gradient;
         z-index: 50;
-        @include smooth-transition(transform, 0.15s, $ease-out-quart);
         @include hardware-acceleration;
+        @include performance-optimized;
 
-        // Entrance animation
+        // Conditional transitions
+        @media (prefers-reduced-motion: no-preference) {
+            @include smooth-transition(transform, 0.15s, $ease-out-quart);
+        }
+
+        // Entrance animation (performance-aware)
         &.spawning {
-            animation: pipeSlideIn 0.4s $ease-out-back;
+            @media (prefers-reduced-motion: no-preference) {
+                animation: pipeSlideIn 0.4s $ease-out-back;
+            }
+
+            @media (prefers-reduced-motion: reduce) {
+                opacity: 0;
+                animation: fadeIn 0.2s ease-out forwards;
+            }
         }
 
-        // Add pipe cap styling
-        &::before {
-            content: '';
-            position: absolute;
-            width: calc(100% + 8px);
-            height: 30px;
-            left: -4px;
-            background: linear-gradient(90deg, $pipe-gradient-end 0%, $pipe-gradient-start 50%, $pipe-gradient-end 100%);
-            border: 2px solid #000000;
-            border-radius: 4px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-            @include smooth-transition(all, 0.15s, $ease-out-quart);
-        }
-
-        // Top pipe cap
-        &.pipe_top::before {
-            bottom: -15px;
-        }
-
-        // Bottom pipe cap
-        &.pipe_bottom::before {
-            top: -15px;
-        }
-
-        // Add subtle animation on hover
-        &:hover {
-            transform: scaleX(1.02);
-
+        // Pipe cap styling (desktop only for performance)
+        @media (min-width: 769px) {
             &::before {
-                box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
+                content: '';
+                position: absolute;
+                width: calc(100% + 8px);
+                height: 30px;
+                left: -4px;
+                background: linear-gradient(90deg, $pipe-gradient-end 0%, $pipe-gradient-start 50%, $pipe-gradient-end 100%);
+                border: 2px solid #000000;
+                border-radius: 4px;
+                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+                @include hardware-acceleration;
+
+                @media (prefers-reduced-motion: no-preference) {
+                    @include smooth-transition(all, 0.15s, $ease-out-quart);
+                }
+            }
+
+            // Top pipe cap
+            &.pipe_top::before {
+                bottom: -15px;
+            }
+
+            // Bottom pipe cap
+            &.pipe_bottom::before {
+                top: -15px;
+            }
+
+            // Hover effects (desktop only)
+            &:hover {
+                transform: scaleX(1.02);
+
+                &::before {
+                    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
+                }
+            }
+        }
+
+        // Mobile optimizations - simplified styling
+        @media (max-width: 768px) {
+
+            // Remove pseudo-elements for better performance
+            &::before {
+                display: none;
+            }
+
+            &:hover {
+                transform: none;
             }
         }
     }
@@ -279,6 +402,51 @@ body {
         color: rgba(255, 255, 255, 0.8);
         z-index: 150;
         animation: pulse 1s ease-in-out infinite;
+    }
+
+    // Mobile pause button
+    .pause-button {
+        position: absolute;
+        top: 20px;
+        right: 20px;
+        width: 50px;
+        height: 50px;
+        background: linear-gradient(135deg, rgba(0, 0, 0, 0.8), rgba(45, 55, 72, 0.8));
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        border-radius: 50%;
+        color: white;
+        font-size: 20px;
+        cursor: pointer;
+        z-index: 250;
+        @include smooth-transition;
+        @include mobile-touch-optimization;
+        backdrop-filter: blur(10px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        display: none; // Hidden by default, shown via JS on mobile
+
+        &:hover {
+            background: linear-gradient(135deg, rgba(0, 0, 0, 0.9), rgba(45, 55, 72, 0.9));
+            border-color: rgba(255, 255, 255, 0.5);
+            transform: scale(1.05);
+        }
+
+        &:active {
+            transform: scale(0.95);
+        }
+
+        // Only show on mobile devices
+        @media (max-width: 768px) {
+            display: block;
+        }
+
+        // Adjust size for very small screens
+        @media (max-width: 480px) {
+            width: 45px;
+            height: 45px;
+            font-size: 18px;
+            top: 15px;
+            right: 15px;
+        }
     }
 }
 

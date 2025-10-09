@@ -85,6 +85,38 @@ export class Pipe {
         return false;
     }
     
+    reset(x, gapY, gapSize, score = 0) {
+        // Reset pipe for reuse in object pool
+        this.x = x;
+        this.gapY = gapY;
+        this.gapSize = gapSize;
+        this.scored = false;
+        
+        // Update pipe width based on score
+        this.width = score >= GAME_CONFIG.PIPE_WIDTH_INCREASE_SCORE 
+            ? GAME_CONFIG.PIPE_WIDTH * GAME_CONFIG.PIPE_WIDTH_INCREASE_RATE 
+            : GAME_CONFIG.PIPE_WIDTH;
+        
+        // Update element positions and sizes
+        if (this.topPipe) {
+            this.topPipe.style.left = this.x + 'px';
+            this.topPipe.style.top = '0px';
+            this.topPipe.style.width = this.width + 'px';
+            this.topPipe.style.height = this.gapY + 'px';
+            this.topPipe.style.display = 'block';
+            this.topPipe.style.opacity = '1';
+        }
+        
+        if (this.bottomPipe) {
+            this.bottomPipe.style.left = this.x + 'px';
+            this.bottomPipe.style.top = (this.gapY + this.gapSize) + 'px';
+            this.bottomPipe.style.width = this.width + 'px';
+            this.bottomPipe.style.height = (window.innerHeight - this.gapY - this.gapSize) + 'px';
+            this.bottomPipe.style.display = 'block';
+            this.bottomPipe.style.opacity = '1';
+        }
+    }
+
     handleResize() {
         // Update bottom pipe height on resize
         if (this.bottomPipe) {

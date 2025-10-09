@@ -109,6 +109,21 @@ export class NPC {
                 charRect.top < npcRect.bottom);
     }
 
+    reset() {
+        // Reset NPC for reuse in object pool
+        this.x = window.innerWidth + 200;
+        this.y = Math.random() * (window.innerHeight - 200) + 100;
+        this.scored = false;
+        this.verticalOffset = Math.random() * Math.PI * 2;
+        
+        // Update element position
+        if (this.element) {
+            this.element.style.left = this.x + 'px';
+            this.element.style.top = this.y + 'px';
+            this.element.style.display = 'block';
+        }
+    }
+
     handleResize() {
         // Ensure NPC stays within new screen bounds
         const maxY = window.innerHeight - this.height - 50;
