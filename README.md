@@ -236,3 +236,5 @@ Potential improvements for future versions:
 **Enjoy playing the Enhanced Flappy Bird Clone!** 🐦✨
 
 *Built with ❤️ using HTML5, SCSS, and JavaScript*
+
+* play here [Ghosty's Flappy Bird Clone](https://aswin402.github.io/ghosty-flappybirdclone/)
